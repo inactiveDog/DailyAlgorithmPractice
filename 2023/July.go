@@ -1,5 +1,7 @@
 package _023
 
+import "sort"
+
 // 2023-07-11 21:13:43
 // 1911. 最大子序列交替和
 // 下标从0开始的数组的 交替和 定义为 偶数 下标处元素之 和 减去 奇数 下标处元素之 和
@@ -105,6 +107,76 @@ func minFallingPathSum(matrix [][]int) int {
 	}
 	return res
 }
+
+// 2023-07-14 14:11:10
+// 979. 在二叉树中分配硬币
+// 给定一个有 n 个节点的二叉树的根节点 root ，树中的每个节点上都对应有 node.val 枚硬币，并且总共有 n 枚硬币
+// 返回所有节点中的硬币均为1枚的最小操作次数
+
+// 递归 : 从叶子节点开始，如果节点的硬币数为0，则需要从父节点移动硬币，如果节点的硬币数大于1，则需要移动硬币到父节点
+// 当前节点需要的移动次数为 node.val - 1 的绝对值
+func distributeCoins(root *TreeNode) int {
+	res := 0
+	var dfs func(*TreeNode) int
+	dfs = func(node *TreeNode) int {
+		if node == nil {
+			return 0
+		}
+		left := dfs(node.Left)
+		right := dfs(node.Right)
+		res += abs(left) + abs(right)
+		return node.Val + left + right - 1
+	}
+	dfs(root)
+	return res
+}
+
+//  16. 最接近的三数之和
+// 给定一个长度n的整数数组和target，找出三个数之和最接近target，假设仅有一个最优解
+
+// 回溯 : 边界条件为 len(path) == 3
+// 递归 : 从当前位置开始，遍历数组，将当前元素加入path，然后递归，最后将当前元素从path中移除
+// 又超时了
+// 双指针 : 先排序，然后遍历数组，将当前元素作为第一个元素，然后使用双指针找到剩下的两个元素
+func threeSumClosest(nums []int, target int) int {
+	sort.Ints(nums)
+
+	closest := nums[0] + nums[1] + nums[2]
+	/**path := make([]int, 0)
+	closest := 1 << 31
+	var dfs func(int, int)
+	dfs = func(idx, sum int) {
+		if len(path) == 3 {
+			if abs(sum-target) < abs(closest-target) {
+				closest = sum
+			}
+			return
+		}
+		for i := idx; i < len(nums); i++ {
+			path = append(path, nums[i])
+			dfs(i+1, sum+nums[i])
+			path = path[:len(path)-1]
+		}
+	}
+	dfs(0, 0)*/
+	// 固定一个，双指针找另外两个
+
+	for i := 0; i < len(nums)-2; i++ {
+		l, r := i+1, len(nums)-1
+		for l < r {
+			sum := nums[i] + nums[l] + nums[r]
+			closest = getClosest(closest, sum, target)
+			if sum == target {
+				return target
+			} else if sum < target {
+				l++
+			} else {
+				r--
+			}
+		}
+	}
+	return closest
+}
 func max64(a, b int64) int64 {
 	if a > b {
 		return a
@@ -119,4 +191,17 @@ func max(a, b int) int {
 }
 func min(a, b int) int {
 	return -max(-a, -b)
+}
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+
+func getClosest(a, b, target int) int {
+	if abs(a-target) < abs(b-target) {
+		return a
+	}
+	return b
 }
