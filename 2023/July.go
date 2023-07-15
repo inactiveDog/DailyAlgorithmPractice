@@ -177,6 +177,49 @@ func threeSumClosest(nums []int, target int) int {
 	}
 	return closest
 }
+
+// 2023-07-15 22:08:16
+// 18. 四数之和
+// 给定一个长度为n的整数数组和target，找出所有和为target的四元组，假设仅有一个最优解
+
+// 回溯 : 超时，不用了
+// 类似于三数之和，先排序，然后固定两个数，然后使用双指针找另外两个数
+// 值得注意的是，需要去重，所有指针都需要去重
+func fourSum(nums []int, target int) [][]int {
+	res := make([][]int, 0)
+	sort.Ints(nums)
+	for i := 0; i < len(nums)-3; i++ {
+		if i > 0 && nums[i] == nums[i-1] { // 去重
+			continue
+		}
+		for j := i + 1; j < len(nums)-2; j++ {
+			if j > i+1 && nums[j] == nums[j-1] { // 去重
+				continue
+			}
+			l, r := j+1, len(nums)-1
+			for l < r {
+				sum := nums[i] + nums[j] + nums[l] + nums[r]
+				if sum == target {
+					res = append(res, []int{nums[i], nums[j], nums[l], nums[r]})
+					for l < r && nums[l] == nums[l+1] { // 去重
+						l++
+					}
+					for l < r && nums[r] == nums[r-1] { // 去重
+						r--
+					}
+					l++
+					r--
+				} else if sum < target {
+					l++
+				} else {
+					r--
+				}
+			}
+		}
+	}
+	return res
+}
+
 func max64(a, b int64) int64 {
 	if a > b {
 		return a
