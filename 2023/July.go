@@ -220,12 +220,179 @@ func fourSum(nums []int, target int) [][]int {
 	return res
 }
 
+// 2023-07-16 15:30:32
+// 834. 树中距离之和
+// 给定一个无向、连通的树，树中有n个节点，标记为0到n-1，边一共n-1条
+// 给定edges [][]int，表示节点edges[i][0]和edges[i][1]之间有一条边，树的根节点为0，返回一个数组ans，ans[i]表示节点i到其他节点的距离之和
+
+// 先用邻接表存储树，然后使用dfs计算每个节点到其他节点的距离之和
+
+// Graph 邻接表
+type Graph struct {
+	adj map[int][]int
+}
+
+// NewGraph 构造函数
+func NewGraph(edges [][]int) *Graph {
+	g := &Graph{make(map[int][]int)}
+	for _, edge := range edges {
+		g.adj[edge[0]] = append(g.adj[edge[0]], edge[1])
+		g.adj[edge[1]] = append(g.adj[edge[1]], edge[0]) // 无向图
+	}
+	return g
+}
+
+func sumOfDistancesInTree(n int, edges [][]int) []int {
+	size := make([]int, n)
+	res := make([]int, n)
+	g := make([][]int, n)
+	for _, edge := range edges {
+		u, v := edge[0], edge[1]
+		g[u] = append(g[u], v)
+		g[v] = append(g[v], u)
+	}
+	var dfs func(int, int)
+	dfs = func(u, parent int) {
+		for _, v := range g[u] {
+			if v == parent {
+				continue
+			}
+			dfs(v, u)
+			// 递归回来，先计算子节点的距离之和，然后再计算当前节点的距离之和
+			size[u] += size[v]
+			res[u] += res[v] + size[v]
+		}
+		size[u]++
+	}
+	var dfs2 func(int, int)
+	dfs2 = func(u, parent int) {
+		for _, v := range g[u] {
+			if v == parent {
+				continue
+			}
+
+			res[v] = res[u] - size[v] + n - size[v]
+			dfs2(v, u)
+		}
+	}
+	dfs(0, -1)
+	dfs2(0, -1)
+	return res
+}
+
+// 2023-07-17 10:21:18
+// 415. 字符串相加
+// 给定两个字符串num1和num2，返回两个字符串的和，字符串中只包含数字字符，不包含前导0，不允许使用内置函数，不允许将字符串转换为整数
+
+// 模拟加法，从后往前加，注意进位
+func addStrings(num1 string, num2 string) string {
+	stack1 := make([]byte, 0)
+	stack2 := make([]byte, 0)
+	for i := 0; i < len(num1); i++ {
+		stack1 = append(stack1, num1[i])
+	}
+	for i := 0; i < len(num2); i++ {
+		stack2 = append(stack2, num2[i])
+	}
+	res := make([]byte, 0)
+	carry := 0
+	for len(stack1) > 0 || len(stack2) > 0 {
+		a, b := 0, 0
+		if len(stack1) > 0 {
+			a = int(stack1[len(stack1)-1] - '0')
+			stack1 = stack1[:len(stack1)-1]
+		}
+		if len(stack2) > 0 {
+			b = int(stack2[len(stack2)-1] - '0')
+			stack2 = stack2[:len(stack2)-1]
+		}
+		sum := a + b + carry
+		res = append(res, byte(sum%10)+'0')
+		carry = sum / 10
+	}
+	if carry > 0 {
+		res = append(res, '1')
+	}
+	for i := 0; i < len(res)/2; i++ {
+		res[i], res[len(res)-1-i] = res[len(res)-1-i], res[i]
+	}
+	return string(res)
+}
+
+// 2023-07-19 17:28:06
+// 874. 模拟行走机器人
+// command 数组给定命令集合 -1 右转 -2 左转 1 <= x <= 9 表示向前移动x个单位长度
+
+// 模拟上下左右行走情况，使用map存储障碍物，使用dx,dy表示上下左右四个方向，使用d表示当前方向，使用x,y表示当前位置
+func robotSim(commands []int, obstacles [][]int) int {
+	obstacle := make(map[[2]int]bool)
+	for _, ob := range obstacles {
+		obstacle[[2]int{ob[0], ob[1]}] = true
+	}
+	dxy := [][]int{{0, 1}, {1, 0}, {0, -1}, {-1, 0}} // 上下左右
+	d := 0                                           // 当前方向
+	x, y := 0, 0                                     // 当前位置
+	for _, command := range commands {
+		if command == -1 {
+			d = (d + 1) % 4
+			continue
+		}
+		if command == -2 {
+			d = (d + 3) % 4
+			continue
+		}
+		if command >= 1 && command <= 9 {
+			for i := 0; i < command; i++ {
+				if _, ok := obstacle[[2]int{x + dxy[d][0], y + dxy[d][1]}]; ok {
+					break
+				}
+				x += dxy[d][0]
+				y += dxy[d][1]
+			}
+		}
+	}
+	return x*x + y*y
+}
+
+// 2023-07-20 10:41:44
+// 918. 环形子数组的最大和
+// 给定一个由整数数组A表示的环形数组C，求C的非空子数组的最大可能和
+
+// 对于环形数组，可以分为两种情况，一种是不跨越数组首尾，一种是跨越数组首尾
+// 不跨越首尾数组的情况直接使用k算法；跨越了首尾的情况，可以转换为求不跨越首尾的情况，即求总和减去中间最小的连续子数组和
+func maxSubarraySumCircular(nums []int) int {
+	if len(nums) == 0 {
+		return 0
+	}
+	curmax, rmax, curmin, rmin := 0, -1<<31, 0, 1<<31
+	total := 0
+	// 全为负数的情况
+	allNegative := true
+	for _, n := range nums {
+		if allNegative && n > 0 {
+			allNegative = false
+		}
+		curmax = max(curmax+n, n)
+		rmax = max(curmax, rmax)
+		curmin = min(curmin+n, n)
+		rmin = min(rmin, curmin)
+		total += n
+	}
+	if allNegative {
+		return rmax
+	}
+	return max(rmax, total-rmin)
+}
 func max64(a, b int64) int64 {
 	if a > b {
 		return a
 	}
 	return b
 }
+
+// code here
+//TODO
+
 func max(a, b int) int {
 	if a > b {
 		return a
